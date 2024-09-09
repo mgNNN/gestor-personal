@@ -58,10 +58,10 @@ app.post('/login', (req, res) => {
  
 // Ruta para registrar un nuevo usuario (opcional)
 app.post('/register', (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, email, phone } = req.body;
 
-  const query = 'INSERT INTO usuarios (username, password) VALUES (?, ?)';
-  db.query(query, [username, password], (err, result) => {
+  const query = 'INSERT INTO usuarios (username, password, correo_electronico, numero_telefono) VALUES (?, ?, ?, ?)';
+  db.query(query, [username, password, email, phone], (err, result) => {
     if (err) {
       return res.status(500).json({ error: 'Error al crear el usuario' });
     }
