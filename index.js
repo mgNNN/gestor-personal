@@ -2,6 +2,7 @@ const express = require('express');
 const mysql = require('mysql');
 const jwt = require('jsonwebtoken'); // Para generar tokens JWT
 const bodyParser = require('body-parser');
+const bcrypt = require('bcryptjs'); // Para encriptar contraseñas
 
 const app = express();
 app.use(bodyParser.json());
@@ -43,29 +44,42 @@ app.post('/login', (req, res) => {
     const user = result[0];
 
     // Verificar la contraseña
-    if (password !== user.password) {
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
-    }
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al verificar la contraseña' });
+      }
 
-    // Generar token JWT
-    const token = jwt.sign({ id: user.id, username: user.username }, 'secret_key', {
-      expiresIn: '1h',
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Contraseña incorrecta' });
+      }
+
+      // Generar token JWT
+      const token = jwt.sign({ id: user.id, username: user.username }, 'secret_key', {
+        expiresIn: '1h',
+      });
+
+      res.json({ message: 'Login exitoso', token });
     });
-
-    res.json({ message: 'Login exitoso', token });
   });
 });
- 
-// Ruta para registrar un nuevo usuario (opcional)
+
+// Ruta para registrar un nuevo usuario
 app.post('/register', (req, res) => {
   const { username, password, email, phone } = req.body;
 
-  const query = 'INSERT INTO usuarios (username, password, correo_electronico, numero_telefono) VALUES (?, ?, ?, ?)';
-  db.query(query, [username, password, email, phone], (err, result) => {
+  // Encriptar la contraseña antes de guardarla
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
     if (err) {
-      return res.status(500).json({ error: 'Error al crear el usuario' });
+      return res.status(500).json({ error: 'Error al encriptar la contraseña' });
     }
-    res.json({ message: 'Usuario creado con éxito' });
+
+    const query = 'INSERT INTO usuarios (username, password, correo_electronico, numero_telefono) VALUES (?, ?, ?, ?)';
+    db.query(query, [username, hashedPassword, email, phone], (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al crear el usuario' });
+      }
+      res.json({ message: 'Usuario creado con éxito' });
+    });
   });
 });
 
