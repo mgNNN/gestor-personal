@@ -22,7 +22,7 @@ db.connect((err) => {
   console.log('Conectado a la base de datos MySQL');
 });
 
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT || 3007;
 
 // Ruta para login
 app.post('/login', (req, res) => {
