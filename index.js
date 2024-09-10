@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: 'gestionpersonaldb.cnygamc4oi4y.eu-north-1.rds.amazonaws.com',
   user: 'admin',
-  password: 'P8r!Y9z#k',
+  password: 'P8r!Y9z#kL',
   database: 'miapp'
 });
 
