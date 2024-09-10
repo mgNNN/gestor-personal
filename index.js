@@ -73,7 +73,7 @@ app.post('/register', (req, res) => {
       return res.status(500).json({ error: 'Error al encriptar la contraseña' });
     }
 
-    const query = 'INSERT INTO usuarios (username, password, correo_electronico, numero_telefono) VALUES (?, ?, ?, ?)';
+    const query = 'INSERT INTO usuarios (username, hashedPassword, correo_electronico, numero_telefono) VALUES (?, ?, ?, ?)';
     db.query(query, [username, hashedPassword, email, phone], (err, result) => {
       if (err) {
         return res.status(500).json({ error: 'Error al crear el usuario' });
