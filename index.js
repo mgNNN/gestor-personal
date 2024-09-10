@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: 'gestionpersonaldb.cnygamc4oi4y.eu-north-1.rds.amazonaws.com',
   user: 'admin',
-  password: 'P8r!Y9z#kL',
+  password: 'P8r!Y9z#k',
   database: 'miapp'
 });
 
@@ -23,7 +23,7 @@ db.connect((err) => {
   console.log('Conectado a la base de datos MySQL');
 });
 
-const PORT = process.env.PORT || 3007;
+const PORT = process.env.PORT || 3006;
 
 // Ruta para login
 app.post('/login', (req, res) => {
