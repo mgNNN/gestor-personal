@@ -3,25 +3,14 @@ const mysql = require('mysql');
 const jwt = require('jsonwebtoken'); // Para generar tokens JWT
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs'); // Para encriptar contraseñas
+const db = require('./db.js');
 
 const app = express();
 app.use(bodyParser.json());
 
 // Configuración de la conexión a MySQL (AWS RDS)
-const db = mysql.createConnection({
-  host: 'gestionpersonaldb.cnygamc4oi4y.eu-north-1.rds.amazonaws.com',
-  user: 'admin',
-  password: 'P8r!Y9z#kL',
-  database: 'miapp'
-});
 
-db.connect((err) => {
-  if (err) {
-    console.error('Error conectando a la base de datos:', err);
-    return;
-  }
-  console.log('Conectado a la base de datos MySQL');
-});
+
 
 const PORT = process.env.PORT || 3006;
 
