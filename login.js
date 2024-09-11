@@ -6,7 +6,7 @@ const db = require('./config/db.js'); // Importar la conexión a la base de dato
 const router = express.Router();
 
 // Ruta para login
-router.post('/', (req, res) => {
+router.post('/login', (req, res) => {
   const { username, password } = req.body;
 
   // Consulta a la base de datos para verificar el usuario

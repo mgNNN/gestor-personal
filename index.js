@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3006;
 
 // Usar Ruta para login
-app.use('/login', loginRouter);
+app.use('/', loginRouter);
 
 
 
