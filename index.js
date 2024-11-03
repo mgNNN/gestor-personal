@@ -83,6 +83,26 @@ app.post('/register', (req, res) => {
   });
 });
 
+// Endpoint para añadir un nuevo medicamento
+app.post('/medicamentos/add', (req, res) => {
+  const { nombre, dosis, numDosis, duracion, horaDosis } = req.body;
+
+  // Verificación de campos obligatorios
+  if (!nombre || !dosis || !numDosis || !duracion || !horaDosis) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+
+  const query = 'INSERT INTO medicamentos (nombre, dosis, numDosis, duracion, horaDosis) VALUES (?, ?, ?, ?, ?)';
+  
+  db.query(query, [nombre, dosis, numDosis, duracion, horaDosis], (err, result) => {
+    if (err) {
+      console.error('Error al guardar el medicamento:', err);
+      return res.status(500).json({ error: 'Error en la base de datos al guardar el medicamento' });
+    }
+    res.json({ message: 'Medicamento guardado correctamente' });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
