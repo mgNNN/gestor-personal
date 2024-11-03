@@ -106,3 +106,65 @@ app.post('/medicamentos/add', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
+
+
+app.get('/products', (req, res) => {
+  const query = 'SELECT * FROM productos';
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al obtener los productos' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/products', (req, res) => {
+  const { name } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
+  }
+
+  const query = 'INSERT INTO productos (name) VALUES (?)';
+  db.query(query, [name], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al crear el producto' });
+    }
+    res.status(201).json({ message: 'Producto creado con éxito', id: result.insertId });
+  });
+});
+
+app.put('/products/:id', (req, res) => {
+  const productId = req.params.id;
+  const { name } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
+  }
+
+  const query = 'UPDATE productos SET name = ? WHERE id = ?';
+  db.query(query, [name, productId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al actualizar el producto' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    res.json({ message: 'Producto actualizado con éxito' });
+  });
+});
+
+app.delete('/products/:id', (req, res) => {
+  const productId = req.params.id;
+
+  const query = 'DELETE FROM productos WHERE id = ?';
+  db.query(query, [productId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al eliminar el producto' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    res.json({ message: 'Producto eliminado con éxito' });
+  });
+});
