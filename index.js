@@ -133,7 +133,7 @@ app.post('/login', (req, res) => {
             const token = jwt.sign({ id: user.id, username: user.username }, 'secret_key', {
                 expiresIn: '1h',
             });
-            res.json({ message: 'Login exitoso', token });
+            res.json({ message: 'Login exitoso',userId: user.id ,token });
         });
     });
 });
@@ -159,23 +159,185 @@ app.post('/register', (req, res) => {
 });
 
 // Ruta para añadir rutina
-app.post('/crear-rutina', authenticateToken, (req, res) => {
-    const { userId, ejercicio, series, repeticiones, peso } = req.body;
+  
+// Endpoint para guardar una rutina completa
+app.post('/rutinas', (req, res) => {
+    const { nombre, user_id, ejercicios } = req.body;
 
-    // Validar que todos los datos requeridos están presentes
-    if (!userId || !ejercicio || !series || !repeticiones) {
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
+    // Inserta la rutina en la tabla rutinas
+    const sqlRutina = "INSERT INTO rutinas (user_id, nombre) VALUES (?, ?)";
+    db.query(sqlRutina, [user_id, nombre], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        
+        const rutinaId = result.insertId;
+
+        // Inserta cada ejercicio con sus series
+        const seriesPromises = ejercicios.flatMap(ejercicio => {
+            const { id: ejercicioId, series } = ejercicio;
+
+            return series.map(serie => {
+                const sqlSerie = "INSERT INTO series (rutina_id, ejercicio_id, series, peso, repeticiones) VALUES (?, ?, ?, ?, ?)";
+                return new Promise((resolve, reject) => {
+                    db.query(sqlSerie, [rutinaId, ejercicioId, serie.series, serie.peso, serie.repeticiones], (err) => {
+                        if (err) reject(err);
+                        else resolve();
+                    });
+                });
+            });
+        });
+
+        // Ejecuta todas las inserciones de series
+        Promise.all(seriesPromises)
+            .then(() => res.status(201).json({ message: "Rutina guardada exitosamente" }))
+            .catch(err => res.status(500).json({ error: err.message }));
+    });
+});
+// Endpoint para actualizar una serie
+app.put('/series/:id', (req, res) => {
+    const serieId = req.params.id;
+    const { peso, repeticiones } = req.body;
+
+    // Verificar que los datos sean válidos
+    if (peso === undefined || repeticiones === undefined) {
+        return res.status(400).json({ error: "El peso y las repeticiones son requeridos" });
     }
 
-    // Consulta SQL adaptada a la estructura de tu tabla
-    const query = 'INSERT INTO rutinas (user_id, ejercicio, series, repeticiones, peso) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [userId, ejercicio, series, repeticiones, peso], (err, result) => {
+    // Actualizar la serie en la base de datos
+    const sql = "UPDATE series SET peso = ?, repeticiones = ? WHERE id = ?";
+    db.query(sql, [peso, repeticiones, serieId], (err, result) => {
         if (err) {
-            // Manejo de error al insertar los datos en la base de datos
-            return res.status(500).json({ error: 'Error al crear la rutina' });
+            console.error('Error al actualizar la serie:', err);
+            return res.status(500).json({ error: 'Error al actualizar la serie' });
         }
-        // Respuesta exitosa
-        res.status(200).json({ message: 'Rutina creada con éxito', rutinaId: result.insertId });
+
+        // Verificar si la serie fue actualizada
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Serie no encontrada' });
+        }
+
+        res.status(200).json({ message: 'Serie actualizada exitosamente' });
+    });
+});
+
+app.get('/rutinas', (req, res) => {
+    const userId = req.query.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'userId es requerido' });
+    }
+
+    const query = `
+        SELECT r.id AS rutina_id, r.nombre AS nombre_rutina,e.nombre AS nombre_ejercicio, s.peso, s.series, s.repeticiones, s.id AS serie_id
+        FROM rutinas AS r
+        LEFT JOIN series AS s ON r.id = s.rutina_id
+        LEFT JOIN ejercicios AS e ON s.ejercicio_id = e.id
+        WHERE r.user_id = ?;
+    `;
+
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('Error en el servidor al obtener las rutinas:', err);
+            return res.status(500).json({ error: 'Error en el servidor al obtener las rutinas' });
+        }
+        res.json(results);
+    });
+});
+
+// Endpoint para obtener los nombres de los ejercicios
+app.get('/ejercicios/nombres', (req, res) => {
+    const query = 'SELECT id, nombre FROM ejercicios'; // Ajusta el nombre de la tabla si es necesario
+
+    db.query(query, (err, result) => {
+        if (err) {
+            console.error('Error al obtener los ejercicios:', err);
+            return res.status(500).json({ error: 'Error en la base de datos' });
+        }
+
+        // Formatear el resultado para que cada objeto tenga 'id' y 'nombre'
+        const ejercicios = result.map(ejercicio => ({
+            id: ejercicio.id,
+            nombre: ejercicio.nombre
+        }));
+
+        // Enviar el array de objetos como respuesta
+        res.json(ejercicios);
+    });
+});
+// Endpoint para guardar un medicamento
+app.post('/medicamentos', (req, res) => {
+    const { user_id, medicamento, dosis, dosisDia, dosisTomadas, duracionTratamiento, horaPrimeraDosis } = req.body;
+
+    // Inserta el medicamento en la tabla medicamentos
+    const sqlMedicamento = `
+        INSERT INTO medicamentos (user_id, medicamento, dosis, dosisDia, dosisTomadas, duracionTratamiento, horaPrimeraDosis) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.query(sqlMedicamento, [user_id, medicamento, dosis, dosisDia, dosisTomadas, duracionTratamiento, horaPrimeraDosis], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        res.status(201).json({ message: "Medicamento guardado exitosamente", medicamento_id: result.insertId });
+    });
+});
+app.get('/medicamentos/:user_id', (req, res) => {
+  const userId = req.params.user_id;
+  const query = 'SELECT * FROM medicamentos WHERE user_id = ?';
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al obtener los medicamentos' });
+    }
+    res.json(results);
+  });
+});
+
+// Endpoint para actualizar un medicamento
+app.put('/medicamentos/:medicamento_id', (req, res) => {
+    const { medicamento_id } = req.params;
+    const { medicamento, dosis, dosisDia, dosisTomadas, duracionTratamiento, horaPrimeraDosis } = req.body;
+
+    const sqlUpdateMedicamento = `
+        UPDATE medicamentos
+        SET medicamento = ?, dosis = ?, dosisDia = ?, dosisTomadas = ?, duracionTratamiento = ?, horaPrimeraDosis = ?
+        WHERE id = ?
+    `;
+
+    db.query(sqlUpdateMedicamento, [medicamento, dosis, dosisDia, dosisTomadas, duracionTratamiento, horaPrimeraDosis, medicamento_id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Medicamento no encontrado" });
+        }
+
+        res.status(200).json({ message: "Medicamento actualizado exitosamente" });
+    });
+});
+
+// Endpoint para eliminar un medicamento
+app.delete('/medicamentos/:medicamento_id', (req, res) => {
+    const { medicamento_id } = req.params;
+
+    const sqlDeleteMedicamento = `
+        DELETE FROM medicamentos
+        WHERE id = ?
+    `;
+
+    db.query(sqlDeleteMedicamento, [medicamento_id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Medicamento no encontrado" });
+        }
+
+        res.status(200).json({ message: "Medicamento eliminado exitosamente" });
     });
 });
 
