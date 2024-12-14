@@ -40,9 +40,9 @@ function authenticateToken(req, res, next) {
 }
 
 // Endpoint para obtener todos los productos
-app.get('/products', (req, res) => {
-    const query = 'SELECT * FROM productos';
-    db.query(query, (err, results) => {
+app.get('/products/:user_id', (req, res) => {
+    const query = 'SELECT * FROM productos WHERE user_id = ?';
+    db.query(query,[user_id], (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Error al obtener los productos' });
         }
