@@ -55,20 +55,21 @@ app.get('/products/:user_id', (req, res) => {
 
 // Endpoint para crear un nuevo producto
 app.post('/products', (req, res) => {
-    const { name } = req.body;
+    const { name, user_id } = req.body;
 
-    if (!name) {
-        return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
+    if (!name || !user_id) {
+        return res.status(400).json({ error: 'El nombre del producto y user_id son obligatorios' });
     }
 
-    const query = 'INSERT INTO productos (name) VALUES (?)';
-    db.query(query, [name], (err, result) => {
+    const query = 'INSERT INTO productos (name, user_id) VALUES (?, ?)';
+    db.query(query, [name, user_id], (err, result) => {
         if (err) {
-            return res.status(500).json({ error: 'Error al crear el producto' });
+            return res.status(500).json({ error: 'Error al insertar el producto' });
         }
-        res.status(201).json({ message: 'Producto creado con éxito', id: result.insertId });
+        res.status(201).json({ message: 'Producto añadido con éxito', id: result.insertId });
     });
 });
+
 
 // Endpoint para actualizar un producto
 app.put('/products/:id', (req, res) => {
