@@ -41,14 +41,17 @@ function authenticateToken(req, res, next) {
 
 // Endpoint para obtener todos los productos
 app.get('/products/:user_id', (req, res) => {
+    const user_id = req.params.user_id; // Extraer el parámetro user_id de la URL
     const query = 'SELECT * FROM productos WHERE user_id = ?';
-    db.query(query,[user_id], (err, results) => {
+
+    db.query(query, [user_id], (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Error al obtener los productos' });
         }
         res.json(results);
     });
 });
+
 
 // Endpoint para crear un nuevo producto
 app.post('/products', (req, res) => {
